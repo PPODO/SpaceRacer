@@ -76,7 +76,6 @@ void ANuclearProjectile::OnComponentHit(UPrimitiveComponent* HitComponent, AActo
 			SpawnEffectsLocation = HitResult.ImpactPoint;
 		}
 	}
-	UE_LOG(LogTemp, Warning, L"QWQW");
 	if (IsValid(m_HitParticle) && IsValid(m_ProjectileCollidingSound)) {
 		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), m_ProjectileCollidingSound, SpawnEffectsLocation);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_HitParticle, SpawnEffectsLocation);

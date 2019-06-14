@@ -14,6 +14,25 @@ ABaseProjectile::ABaseProjectile() {
 
 	m_MovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(L"Projectile Movement Component");
 
-	InitialLifeSpan = 7.5f;
+	m_fLifeSpan = 7.5f;
+	InitialLifeSpan = m_fLifeSpan;
 	PrimaryActorTick.bCanEverTick = false;
+}
+
+void ABaseProjectile::Activate() {
+	ABasePooling::Activate();
+
+	if (m_MovementComponent->IsValidLowLevelFast()) {
+		m_MovementComponent->SetActive(true);
+		m_MovementComponent->SetComponentTickEnabled(true);
+	}
+}
+
+void ABaseProjectile::DeActivate() {
+	ABasePooling::DeActivate();
+
+	if (m_MovementComponent->IsValidLowLevelFast()) {
+		m_MovementComponent->SetActive(false);
+		m_MovementComponent->SetComponentTickEnabled(false);
+	}
 }

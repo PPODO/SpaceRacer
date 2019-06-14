@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "BasePooling.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFrameWork/ProjectileMovementComponent.h"
@@ -12,12 +12,16 @@
 #include "BaseProjectile.generated.h"
 
 UCLASS()
-class SPACERACER_API ABaseProjectile : public AActor
+class SPACERACER_API ABaseProjectile : public ABasePooling
 {
 	GENERATED_BODY()
 	
 public:
 	ABaseProjectile();
+
+public:
+	virtual void Activate() override;
+	virtual void DeActivate() override;
 
 protected:
 	UPROPERTY()
