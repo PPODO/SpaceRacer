@@ -1,5 +1,6 @@
 #include "DefaultProjectile.h"
 #include "ConstructorHelpers.h"
+#include "PoolObjectOwnerComponent.h"
 #include "GameFramework/DamageType.h"
 
 ADefaultProjectile::ADefaultProjectile() {
@@ -30,16 +31,22 @@ ADefaultProjectile::ADefaultProjectile() {
 	}
 
 	m_fBaseDamage = 35.f;
-	
-	PrimaryActorTick.bCanEverTick = false;
 }
 
 void ADefaultProjectile::OnComponentHit(UPrimitiveComponent * HitComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, FVector NormalImpulse, const FHitResult & Hit) {
+	AActor* Owner = GetOwner();
+
 	if (IsValid(m_HitParticle)) {
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_HitParticle, GetActorLocation());
 	}
-	if (OtherActor && this != OtherActor && OtherActor != GetOwner()) {
+	if (OtherActor && this != OtherActor && OtherActor != Owner) {
 		UGameplayStatics::ApplyDamage(OtherActor, m_fBaseDamage, nullptr, this, UDamageType::StaticClass());
 	}
-	Destroy();
+
+	DeActivate();
+
+	UPoolObjectOwnerComponent* OwnerComponent = Cast<UPoolObjectOwnerComponent>(Owner->GetComponentByClass(UPoolObjectOwnerComponent::StaticClass()));
+	if (Owner && OwnerComponent) {
+		OwnerComponent->ReleasePoolObject("DefaultProjectile", this);
+	}
 }

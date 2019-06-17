@@ -13,18 +13,14 @@ ABaseProjectile::ABaseProjectile() {
 	m_ProjectileMesh->SetupAttachment(m_CollisionComponent);
 
 	m_MovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(L"Projectile Movement Component");
-
-	m_fLifeSpan = 7.5f;
-	InitialLifeSpan = m_fLifeSpan;
-	PrimaryActorTick.bCanEverTick = false;
 }
 
-void ABaseProjectile::Activate() {
-	ABasePooling::Activate();
+void ABaseProjectile::Activate(AActor* Owner, bool bUseTick) {
+	ABasePooling::Activate(Owner, bUseTick);
 
 	if (m_MovementComponent->IsValidLowLevelFast()) {
-		m_MovementComponent->SetActive(true);
-		m_MovementComponent->SetComponentTickEnabled(true);
+		m_MovementComponent->SetActive(true, true);
+		m_MovementComponent->Velocity = GetActorForwardVector() * m_MovementComponent->GetMaxSpeed();
 	}
 }
 
@@ -33,6 +29,5 @@ void ABaseProjectile::DeActivate() {
 
 	if (m_MovementComponent->IsValidLowLevelFast()) {
 		m_MovementComponent->SetActive(false);
-		m_MovementComponent->SetComponentTickEnabled(false);
 	}
 }

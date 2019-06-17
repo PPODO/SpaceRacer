@@ -1,21 +1,20 @@
 #include "BasePooling.h"
 
 ABasePooling::ABasePooling() {
-	m_fLifeSpan = 0.f;
-
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.SetTickFunctionEnable(false);
 }
 
-void ABasePooling::Activate() {
+void ABasePooling::Activate(AActor* Owner, bool bUseTick) {
+	SetOwner(Owner);
 	SetActorEnableCollision(true);
-	SetActorTickEnabled(true);
+	SetActorTickEnabled(bUseTick);
 	SetActorHiddenInGame(false);
-	SetLifeSpan(m_fLifeSpan);
 }
 
 void ABasePooling::DeActivate() {
+	SetOwner(nullptr);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
 	SetActorHiddenInGame(true);
-	SetLifeSpan(0.f);
 }

@@ -13,7 +13,8 @@ class ASpaceRacerGameMode : public AGameModeBase
 
 public:
 	ASpaceRacerGameMode();
+
+protected:
+	virtual void StartPlay() override;
+
 };
-
-
-

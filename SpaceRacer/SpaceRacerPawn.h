@@ -38,6 +38,8 @@ private:
 		class USceneComponent* m_CannonMuzzleComponent;
 	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
 		class UChildActorComponent* m_SwordMasterChildActorClass;
+	UPROPERTY()
+		class UPoolObjectOwnerComponent* m_PoolOwnerComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = "true"))
 		float m_fLookUpRate = 0.5f;
@@ -57,6 +59,8 @@ private:
 		class USoundCue* m_FireDefaultProjectileCue;
 	UPROPERTY()
 		class UParticleSystem* m_MuzzleEffect;
+	UPROPERTY()
+		class USoundCue* m_AbilitySoundCue;
 
 	class ASwordMaster* m_SwordMasterClass;
 
@@ -105,6 +109,9 @@ private:
 	bool bIsLowFriction;
 	UPhysicalMaterial* SlipperyMaterial;
 	UPhysicalMaterial* NonSlipperyMaterial;
+
+private:
+	TSharedPtr<TArray<class ABasePooling*>*> m_DefaultProjectilePtr;
 
 public:
 	FORCEINLINE USpringArmComponent* GetSpringArm() const { return SpringArm; }

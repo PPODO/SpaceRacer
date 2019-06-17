@@ -20,7 +20,7 @@ public:
 	ABaseProjectile();
 
 public:
-	virtual void Activate() override;
+	virtual void Activate(AActor* Owner, bool bUseTick = true) override;
 	virtual void DeActivate() override;
 
 protected:

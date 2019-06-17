@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "BasePooling.h"
+#include "Engine/World.h"
 #include "ObjectPoolManager.generated.h"
 
 USTRUCT()
@@ -30,17 +31,22 @@ public:
 		m_PoolList.Push(const_cast<ABasePooling*>(Object));
 	}
 	
-	FORCEINLINE void GetObjectFromPoolList(TArray<ABasePooling*>& List, const int32& Count) {
-		int32 ObjectCount = GetPoolListSize() <= Count ? GetPoolListSize() : Count;
-		for (int32 i = 0; i < ObjectCount; i++) {
-			ABasePooling* Object = m_PoolList.Pop();
-			if (IsValid(Object)) {
-				List.Push(Object);
+	template<typename T>
+	FORCEINLINE void GetObjectFromPoolList(TArray<T*>& List, const int32& Count) {
+		if (m_PoolList.Num() > 0) {
+			int32 ObjectCount = GetPoolListSize() < Count ? GetPoolListSize() : Count;
+
+			for (int32 i = 0; i < ObjectCount; i++) {
+				T* Object = Cast<T>(m_PoolList.Pop());
+				if (IsValid(Object)) {
+					List.Push(Object);
+				}
 			}
 		}
 	}
 
-	FORCEINLINE void ReleaseObjectToPoolList(TArray<ABasePooling*>& List) {
+	template<typename T>
+	FORCEINLINE void ReleaseObjectToPoolList(TArray<T*>& List) {
 		for (auto Iterator : List) {
 			if (IsValid(Iterator)) {
 				m_PoolList.Push(Iterator);
@@ -77,6 +83,23 @@ private:
 		TArray<FObjectPoolType> m_PoolingType;
 
 public:
-	void GetObjectFromPoolList(TArray<ABasePooling*>& List, const FName& ObjectName, const int32& Count);
+	void AddNewObjectPoolType(const FObjectPoolType& NewObjectType);
+
+public:
+	template<typename T>
+	void GetObjectFromPoolList(TArray<T*>& List, const FName& ObjectName, const int32& Count) {
+		FObjectPoolType* Result = m_PoolingType.FindByPredicate([&ObjectName](const FObjectPoolType& Value) { if (Value.m_ObjectName == ObjectName) { return true; } return false; });
+		if (Result) {
+			Result->GetObjectFromPoolList<T>(List, (Count > 0 ? Count : 0));
+		}
+	}
+
+	template<typename T>
+	void ReleaseObjectToPoolList(TArray<T*>& List, const FName& ObjectName) {
+		FObjectPoolType* Result = m_PoolingType.FindByPredicate([&ObjectName](const FObjectPoolType& Value) { if (Value.m_ObjectName == ObjectName) { return true; } return false; });
+		if (Result) {
+			Result->ReleaseObjectToPoolList<T>(List);
+		}
+	}
 
 };

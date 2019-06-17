@@ -12,11 +12,8 @@ class SPACERACER_API ABasePooling : public AActor
 public:
 	ABasePooling();
 
-protected:
-	float m_fLifeSpan;
-
 public:
-	virtual void Activate();
+	virtual void Activate(AActor* Owner, bool bUseTick = true);
 	virtual void DeActivate();
 
 };

@@ -3,8 +3,14 @@
 #include "SpaceRacerGameMode.h"
 #include "SpaceRacerPawn.h"
 #include "SpaceRacerHud.h"
+#include "ObjectPoolManager.h"
 
 ASpaceRacerGameMode::ASpaceRacerGameMode() {
 	DefaultPawnClass = ASpaceRacerPawn::StaticClass();
 	HUDClass = ASpaceRacerHud::StaticClass();
+}
+
+void ASpaceRacerGameMode::StartPlay() {
+	Super::StartPlay();
+
 }

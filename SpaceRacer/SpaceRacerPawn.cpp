@@ -3,10 +3,13 @@
 #include "SpaceRacerPawn.h"
 #include "SpaceRacerWheelFront.h"
 #include "SpaceRacerWheelRear.h"
+#include "PoolObjectOwnerComponent.h"
 #include "SpaceRacerHud.h"
 #include "DefaultProjectile.h"
 #include "NuclearProjectile.h"
 #include "SwordMaster.h"
+#include "ObjectPoolManager.h"
+#include "SpaceRacerGameInstance.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -37,7 +40,12 @@ const float AbilityOnSpringArmLength = 225.f;
 const float PerceptionAngle = FMath::DegreesToRadians(50.f);
 
 ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLength(DefaultSpringArmLength), m_bIsMovingSpringArmLength(false) {
+	::ConstructorHelpers::FObjectFinder<USoundCue> AbilitySoundCue(L"SoundCue'/Game/ProjectileSounds/AbilitySound_Cue.AbilitySound_Cue'");
 	::ConstructorHelpers::FObjectFinder<USoundCue> DefaultProjectileCue(L"SoundCue'/Game/ProjectileSounds/DefaultProjectileShotSound2_Cue.DefaultProjectileShotSound2_Cue'");
+
+	if (AbilitySoundCue.Succeeded()) {
+		m_AbilitySoundCue = AbilitySoundCue.Object;
+	}
 
 	if (DefaultProjectileCue.Succeeded()) {
 		m_FireDefaultProjectileCue = DefaultProjectileCue.Object;
@@ -159,6 +167,9 @@ ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLe
 	m_SwordMasterChildActorClass->SetChildActorClass(ASwordMaster::StaticClass());
 	m_SwordMasterChildActorClass->SetupAttachment(RootComponent);
 
+	m_PoolOwnerComponent = CreateDefaultSubobject<UPoolObjectOwnerComponent>(L"Pool Object Owner Component");
+	m_PoolOwnerComponent->AddNewObjectType("DefaultProjectile", 75);
+
 	m_NuclearSpawnOffset = FVector(0.f, 0.f, 1000.f);
 	m_CannonDefaultRotation = FRotator(25.f, 0.f, 0.f);
 	m_CurrentDefaultProjectileCount = ::MaxDefaultProjectileCount;
@@ -174,6 +185,10 @@ void ASpaceRacerPawn::BeginPlay() {
 
 	if (IsValid(m_SwordMasterChildActorClass)) {
 		m_SwordMasterClass = Cast<ASwordMaster>(m_SwordMasterChildActorClass->GetChildActor());
+	}
+
+	if (IsValid(m_PoolOwnerComponent)) {
+		m_DefaultProjectilePtr = MakeShared<TArray<ABasePooling*>*>(m_PoolOwnerComponent->m_PoolObjects.Find("DefaultProjectile"));
 	}
 }
 
@@ -260,6 +275,9 @@ void ASpaceRacerPawn::OnUseAbilityPressed() {
 	if (IsValid(m_SwordMasterClass)) {
 		m_SwordMasterClass->ActivateSwordMater(m_bIsOnAbility);
 	}
+	if (m_bIsOnAbility && IsValid(m_AbilitySoundCue)) {
+		UGameplayStatics::PlaySound2D(GetWorld(), m_AbilitySoundCue);
+	}
 }
 
 void ASpaceRacerPawn::UpdatePhysicsMaterial() {
@@ -283,17 +301,16 @@ void ASpaceRacerPawn::UpdateCannonRotation(const FRotator& CannonRotation) {
 
 void ASpaceRacerPawn::FireProjectile(const FRotator& CannonRotation) {
 	if (m_bIsOnFire) {
-		if (m_CurrentDefaultProjectileCount > 0 && IsValid(m_CannonMuzzleComponent) && m_ElapsedTime > m_fFireProjectileDelay) {
-			FActorSpawnParameters Param;
-			Param.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-			Param.Owner = this;
+		if (m_ElapsedTime > m_fFireProjectileDelay && m_CurrentDefaultProjectileCount > 0 && m_DefaultProjectilePtr.IsValid() && (*m_DefaultProjectilePtr)->Num() > 0 && IsValid(m_CannonMuzzleComponent)) {
 			FVector MuzzleLocation = m_CannonMuzzleComponent->GetComponentLocation();
-			auto IsSucceed = GetWorld()->SpawnActor<ADefaultProjectile>(ADefaultProjectile::StaticClass(), MuzzleLocation, CannonRotation, Param);
+			ADefaultProjectile* ProjectileObject = Cast<ADefaultProjectile>((*m_DefaultProjectilePtr)->Pop());
+			ProjectileObject->SetActorLocationAndRotation(MuzzleLocation, CannonRotation);
+			ProjectileObject->Activate(this, false);
 
 			UGameplayStatics::SpawnEmitterAttached(m_MuzzleEffect, m_CannonMuzzleComponent);
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_FireDefaultProjectileCue, GetActorLocation());
-
-			if (IsSucceed->IsValidLowLevelFast()) {
+			
+			if (ProjectileObject->IsValidLowLevelFast()) {
 				m_CurrentDefaultProjectileCount--;
 			}
 			m_ElapsedTime = 0.f;
