@@ -4,6 +4,7 @@
 #include "SpaceRacerWheelFront.h"
 #include "SpaceRacerWheelRear.h"
 #include "PoolObjectOwnerComponent.h"
+#include "NuclearExplosionCameraShake.h"
 #include "SpaceRacerHud.h"
 #include "DefaultProjectile.h"
 #include "NuclearProjectile.h"
@@ -33,8 +34,8 @@
 const FName ASpaceRacerPawn::LookUpBinding("LookUp");
 const FName ASpaceRacerPawn::LookRightBinding("LookRight");
 const FName ASpaceRacerPawn::EngineAudioRPM("RPM");
-const uint32 MaxDefaultProjectileCount = 500;
-const uint32 MaxNuclearProjectileCount = 100;
+const uint32 MaxDefaultProjectileCount = 50;
+const uint32 MaxNuclearProjectileCount = 3;
 const float DefaultSpringArmLength = 125.f;
 const float AbilityOnSpringArmLength = 225.f;
 const float PerceptionAngle = FMath::DegreesToRadians(50.f);
@@ -169,6 +170,7 @@ ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLe
 
 	m_PoolOwnerComponent = CreateDefaultSubobject<UPoolObjectOwnerComponent>(L"Pool Object Owner Component");
 	m_PoolOwnerComponent->AddNewObjectType("DefaultProjectile", 75);
+	m_PoolOwnerComponent->AddNewObjectType("NuclearProjectile", 5);
 
 	m_NuclearSpawnOffset = FVector(0.f, 0.f, 1000.f);
 	m_CannonDefaultRotation = FRotator(25.f, 0.f, 0.f);
@@ -185,10 +187,12 @@ void ASpaceRacerPawn::BeginPlay() {
 
 	if (IsValid(m_SwordMasterChildActorClass)) {
 		m_SwordMasterClass = Cast<ASwordMaster>(m_SwordMasterChildActorClass->GetChildActor());
+		m_SwordMasterClass->SetOwner(this);
 	}
 
 	if (IsValid(m_PoolOwnerComponent)) {
 		m_DefaultProjectilePtr = MakeShared<TArray<ABasePooling*>*>(m_PoolOwnerComponent->m_PoolObjects.Find("DefaultProjectile"));
+		m_NuclearProjectilePtr = MakeShared<TArray<ABasePooling*>*>(m_PoolOwnerComponent->m_PoolObjects.Find("NuclearProjectile"));
 	}
 }
 
@@ -257,13 +261,12 @@ void ASpaceRacerPawn::OnFireProjectileReleased() {
 }
 
 void ASpaceRacerPawn::OnFireNuclearPressed() {
-	if (m_CurrentNuclearProjectileCount > 0) {
-		FActorSpawnParameters Param;
-		Param.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-		Param.Owner = this;
-		auto Projectile = GetWorld()->SpawnActor<ANuclearProjectile>(ANuclearProjectile::StaticClass(), GetActorLocation() + m_NuclearSpawnOffset, FRotator(0.f, GetControlRotation().Yaw, 0.f), Param);
-
+	if (m_CurrentNuclearProjectileCount > 0 && m_NuclearProjectilePtr.IsValid() && (*m_NuclearProjectilePtr)->Num() > 0) {
+		ANuclearProjectile* Projectile = Cast<ANuclearProjectile>((*m_NuclearProjectilePtr)->Pop());
 		if (IsValid(Projectile)) {
+			Projectile->SetActorLocationAndRotation(GetActorLocation() + m_NuclearSpawnOffset, FRotator(0.f, GetControlRotation().Yaw, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
+			Projectile->Activate(this);
+
 			m_CurrentNuclearProjectileCount--;
 		}
 	}
@@ -305,7 +308,7 @@ void ASpaceRacerPawn::FireProjectile(const FRotator& CannonRotation) {
 			FVector MuzzleLocation = m_CannonMuzzleComponent->GetComponentLocation();
 			ADefaultProjectile* ProjectileObject = Cast<ADefaultProjectile>((*m_DefaultProjectilePtr)->Pop());
 			ProjectileObject->SetActorLocationAndRotation(MuzzleLocation, CannonRotation);
-			ProjectileObject->Activate(this, false);
+			ProjectileObject->Activate(this);
 
 			UGameplayStatics::SpawnEmitterAttached(m_MuzzleEffect, m_CannonMuzzleComponent);
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_FireDefaultProjectileCue, GetActorLocation());

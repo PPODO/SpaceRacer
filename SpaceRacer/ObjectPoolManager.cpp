@@ -12,6 +12,7 @@ void AObjectPoolManager::PostInitializeComponents() {
 		for (int32 i = 0; i < Iterator.m_MaxSize; i++) {
 			ABasePooling* Data = Cast<ABasePooling>(GetWorld()->SpawnActor(Iterator.m_ObjectClassType));
 			check(Data);
+			Data->SetObjectName(Iterator.m_ObjectName);
 			Data->DeActivate();
 
 			Iterator.AddNewObjectToPoolList(Data);

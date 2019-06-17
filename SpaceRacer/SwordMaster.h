@@ -18,13 +18,15 @@ protected:
 
 private:
 	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
-		class USceneComponent* m_RootComponent;
+		class USphereComponent* m_ShieldComponent;
 	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
 		TArray<class UStaticMeshComponent*> m_SwordMeshes;
 
 private:
 	UPROPERTY()
 		class UParticleSystem* m_ActivateSwordMasterEffect;
+	UPROPERTY()
+		class UParticleSystem* m_OverlappedEffect;
 
 private:
 	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
@@ -34,6 +36,10 @@ private:
 
 private:
 	float m_fCurrentSpinSpeed;
+
+private:
+	UFUNCTION()
+		void OnShieldComponentOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 public:
 	FORCEINLINE void ActivateSwordMater(bool bActivate, bool bSpawnParticle = true);

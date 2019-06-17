@@ -12,9 +12,15 @@ class SPACERACER_API ANuclearProjectile : public ABaseProjectile
 public:
 	ANuclearProjectile();
 
+public:
+	virtual void Activate(AActor* Owner, bool bUseTick = true) override;
+	virtual void DeActivate() override;
+
 private:
 	UPROPERTY()
 		class URadialForceComponent* m_RadialForceComponent;
+	UPROPERTY()
+		TSubclassOf<class UNuclearExplosionCameraShake> m_ExplosionShakeClass;
 
 private:
 	UFUNCTION()

@@ -1,5 +1,7 @@
 #include "NuclearProjectile.h"
+#include "NuclearExplosionCameraShake.h"
 #include "PhysicsEngine/RadialForceComponent.h"
+#include "PoolObjectOwnerComponent.h"
 #include "ConstructorHelpers.h"
 #include "Sound/SoundClass.h"
 
@@ -9,7 +11,11 @@ ANuclearProjectile::ANuclearProjectile() {
 	::ConstructorHelpers::FObjectFinder<USoundCue> HitSound(TEXT("SoundCue'/Game/ProjectilesPack/Sounds/Common/Explosion_02_Cue.Explosion_02_Cue'"));
 	::ConstructorHelpers::FObjectFinder<UParticleSystem> TrailParticle(TEXT("ParticleSystem'/Game/VFX_Toolkit_V1/ParticleSystems/356Days/Par_MissileTrails2.Par_MissileTrails2'"));
 	::ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticle(TEXT("ParticleSystem'/Game/VFX_Toolkit_V1/ParticleSystems/356Days/Par_DivineLaser.Par_DivineLaser'"));
+	::ConstructorHelpers::FClassFinder<UNuclearExplosionCameraShake> CameraShake(L"Class'/Script/SpaceRacer.NuclearExplosionCameraShake'");
 
+	if (CameraShake.Succeeded()) {
+		m_ExplosionShakeClass = CameraShake.Class;
+	}
 	//	if (TrailSound.Succeeded()) {
 	//		m_ProjectileTrailSound = TrailSound.Object;
 	//	}
@@ -22,7 +28,6 @@ ANuclearProjectile::ANuclearProjectile() {
 	if (TrailParticle.Succeeded()) {
 		m_TrailParticle = TrailParticle.Object;
 	}
-
 	RootComponent = m_CollisionComponent;
 
 	if (m_CollisionComponent->IsValidLowLevelFast()) {
@@ -61,7 +66,34 @@ ANuclearProjectile::ANuclearProjectile() {
 
 	m_ParticleSystemComponents.Add(ParticleSysComp1);
 
-	PrimaryActorTick.bCanEverTick = false;
+	m_fLifeSpanTime = 3.5f;
+}
+
+void ANuclearProjectile::Activate(AActor * Owner, bool bUseTick) {
+	ABaseProjectile::Activate(Owner, bUseTick);
+
+	if (m_ProjectileMesh->IsValidLowLevelFast()) {
+		m_ProjectileMesh->SetHiddenInGame(false);
+	}
+	for (auto Iterator : m_ParticleSystemComponents) {
+		if (Iterator->IsValidLowLevelFast()) {
+			Iterator->SetActive(true, true);
+		}
+	}
+}
+
+void ANuclearProjectile::DeActivate() {
+	ABaseProjectile::DeActivate();
+
+	SetActorHiddenInGame(false);
+	if (m_ProjectileMesh->IsValidLowLevelFast()) {
+		m_ProjectileMesh->SetHiddenInGame(true);
+	}
+	for (auto Iterator : m_ParticleSystemComponents) {
+		if (Iterator->IsValidLowLevelFast()) {
+			Iterator->DeactivateSystem();
+		}
+	}
 }
 
 void ANuclearProjectile::OnComponentHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) {
@@ -80,6 +112,12 @@ void ANuclearProjectile::OnComponentHit(UPrimitiveComponent* HitComponent, AActo
 		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), m_ProjectileCollidingSound, SpawnEffectsLocation);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_HitParticle, SpawnEffectsLocation);
 	}
+	auto PC = GetWorld()->GetFirstPlayerController();
+	if (PC->IsValidLowLevelFast()) {
+		PC->PlayerCameraManager->PlayCameraShake(m_ExplosionShakeClass);
+	}
+
 	m_RadialForceComponent->FireImpulse();
-	Destroy();
+	ReleaseThisObject(m_ObjectName);
+	DeActivate();
 }

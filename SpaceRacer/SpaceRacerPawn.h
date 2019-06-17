@@ -112,6 +112,7 @@ private:
 
 private:
 	TSharedPtr<TArray<class ABasePooling*>*> m_DefaultProjectilePtr;
+	TSharedPtr<TArray<class ABasePooling*>*> m_NuclearProjectilePtr;
 
 public:
 	FORCEINLINE USpringArmComponent* GetSpringArm() const { return SpringArm; }

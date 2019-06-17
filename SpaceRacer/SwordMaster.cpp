@@ -1,5 +1,5 @@
 #include "SwordMaster.h"
-#include "Components/CapsuleComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Particles/ParticleSystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -12,8 +12,11 @@ static const float MaxSpinSpeed = 17.5f;
 static const float MinSpinSpeed = 2.5f;
 
 ASwordMaster::ASwordMaster() {
-	m_RootComponent = CreateDefaultSubobject<USceneComponent>(L"Collision Component");
-	RootComponent = m_RootComponent;
+	m_ShieldComponent = CreateDefaultSubobject<USphereComponent>(L"Collision Component");
+	m_ShieldComponent->SetSphereRadius(175.f);
+	m_ShieldComponent->BodyInstance.SetCollisionProfileName("Shield");
+	m_ShieldComponent->OnComponentBeginOverlap.AddDynamic(this, &ASwordMaster::OnShieldComponentOverlapBegin);
+	RootComponent = m_ShieldComponent;
 
 	for (uint32 i = 0; i < MaxSpinSwordCount; i++) {
 		float CurrentAngle = FMath::DegreesToRadians(i * (360.f / float(MaxSpinSwordCount)));
@@ -38,6 +41,11 @@ ASwordMaster::ASwordMaster() {
 		m_ActivateSwordMasterEffect = Particle.Object;
 	}
 
+	::ConstructorHelpers::FObjectFinder<UParticleSystem> Particle2(L"ParticleSystem'/Game/ProjectilesPack/Particles/Bullet/P_BulletImpact.P_BulletImpact'");
+	if (Particle2.Succeeded()) {
+		m_OverlappedEffect = Particle2.Object;
+	}
+
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -55,7 +63,7 @@ void ASwordMaster::Tick(float DeltaTime) {
 			m_fCurrentSpinSpeed = UKismetMathLibrary::FInterpTo(m_fCurrentSpinSpeed, MinSpinSpeed, DeltaTime, m_fInterpSpeed);
 		}
 
-		m_RootComponent->AddRelativeRotation(FRotator(0.f, m_fCurrentSpinSpeed / 1.5f, 0.f));
+		m_ShieldComponent->AddRelativeRotation(FRotator(0.f, m_fCurrentSpinSpeed / 1.5f, 0.f));
 
 		for (auto It : m_SwordMeshes) {
 			It->AddRelativeRotation(FRotator(0.f, m_fCurrentSpinSpeed, 0.f));
@@ -72,6 +80,18 @@ void ASwordMaster::ActivateSwordMater(bool bActivate, bool bSpawnParticle) {
 	SetActorEnableCollision(bActivate);
 
 	if (bSpawnParticle) {
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_ActivateSwordMasterEffect, GetActorLocation());
+		UGameplayStatics::SpawnEmitterAttached(m_ActivateSwordMasterEffect, RootComponent, NAME_None);
+	}
+}
+
+void ASwordMaster::OnShieldComponentOverlapBegin(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult) {
+	if (OverlappedComponent && OtherActor != this && GetOwner() != OtherActor && OtherActor->GetOwner() != GetOwner()) {
+		if (m_OverlappedEffect) {
+			m_fCurrentSpinSpeed = MaxSpinSpeed;
+
+			UGameplayStatics::SpawnEmitterAttached(m_ActivateSwordMasterEffect, RootComponent, NAME_None);
+		 // UGameplayStatics::PlaySound2D(GetWorld(), nullptr);
+		}
+		OtherActor->Destroy();
 	}
 }

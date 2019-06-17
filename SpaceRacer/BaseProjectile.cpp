@@ -1,7 +1,6 @@
 #include "BaseProjectile.h"
 
 ABaseProjectile::ABaseProjectile() {
-
 	m_CollisionComponent = CreateDefaultSubobject<UBoxComponent>(L"Box Collision Component");
 	m_CollisionComponent->SetRelativeLocation(FVector(0.f));
 	m_CollisionComponent->SetRelativeRotation(FRotator(0.f));
@@ -16,7 +15,7 @@ ABaseProjectile::ABaseProjectile() {
 }
 
 void ABaseProjectile::Activate(AActor* Owner, bool bUseTick) {
-	ABasePooling::Activate(Owner, bUseTick);
+	ABasePooling::Activate(Owner, FMath::IsNearlyZero(m_fLifeSpanTime) ? false : bUseTick);
 
 	if (m_MovementComponent->IsValidLowLevelFast()) {
 		m_MovementComponent->SetActive(true, true);
