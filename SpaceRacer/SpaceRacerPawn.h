@@ -34,9 +34,9 @@ public:
 private:
 	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
 		class UStaticMeshComponent* m_CannonMeshComponent;
-	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY()
 		class USceneComponent* m_CannonMuzzleComponent;
-	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY()
 		class UChildActorComponent* m_SwordMasterChildActorClass;
 	UPROPERTY()
 		class UPoolObjectOwnerComponent* m_PoolOwnerComponent;
@@ -46,7 +46,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Camera", Meta = (AllowPrivateAccess = "true"))
 		float m_fLookRightRate = 0.5f;
 	UPROPERTY(EditAnywhere, Category = "Projectile Setting", Meta = (AllowPrivateAccess = "true"))
-		float m_fFireProjectileDelay = 0.25f;
+		float m_fFireProjectileDelay = 0.125f;
 
 private:
 	TMap<uint32, APawn*> m_SensingPawns;
@@ -62,7 +62,7 @@ private:
 	UPROPERTY()
 		class USoundCue* m_AbilitySoundCue;
 
-	class ASwordMaster* m_SwordMasterClass;
+	class ASwordMaster* m_SwordMasterInstance;
 
 private:
 	FVector m_NuclearSpawnOffset;

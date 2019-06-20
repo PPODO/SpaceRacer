@@ -1,4 +1,5 @@
 #include "SwordMaster.h"
+#include "BasePooling.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Particles/ParticleSystem.h"
@@ -13,7 +14,7 @@ static const float MinSpinSpeed = 2.5f;
 
 ASwordMaster::ASwordMaster() {
 	m_ShieldComponent = CreateDefaultSubobject<USphereComponent>(L"Collision Component");
-	m_ShieldComponent->SetSphereRadius(175.f);
+	m_ShieldComponent->SetSphereRadius(225.f);
 	m_ShieldComponent->BodyInstance.SetCollisionProfileName("Shield");
 	m_ShieldComponent->OnComponentBeginOverlap.AddDynamic(this, &ASwordMaster::OnShieldComponentOverlapBegin);
 	RootComponent = m_ShieldComponent;
@@ -92,6 +93,15 @@ void ASwordMaster::OnShieldComponentOverlapBegin(UPrimitiveComponent * Overlappe
 			UGameplayStatics::SpawnEmitterAttached(m_ActivateSwordMasterEffect, RootComponent, NAME_None);
 		 // UGameplayStatics::PlaySound2D(GetWorld(), nullptr);
 		}
-		OtherActor->Destroy();
+
+		if (OtherActor->IsA<ABasePooling>()) {
+			ABasePooling* PoolObject = Cast<ABasePooling>(OtherActor);
+			if (PoolObject) {
+				PoolObject->Release();
+			}
+		}
+		else {
+			OtherActor->Destroy();
+		}
 	}
 }

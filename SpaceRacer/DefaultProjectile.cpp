@@ -32,6 +32,7 @@ ADefaultProjectile::ADefaultProjectile() {
 
 	m_fBaseDamage = 35.f;
 	m_fLifeSpanTime = 1.5f;
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 void ADefaultProjectile::OnComponentHit(UPrimitiveComponent * HitComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, FVector NormalImpulse, const FHitResult & Hit) {
@@ -41,7 +42,5 @@ void ADefaultProjectile::OnComponentHit(UPrimitiveComponent * HitComponent, AAct
 	if (OtherActor && this != OtherActor && OtherActor != GetOwner()) {
 		UGameplayStatics::ApplyDamage(OtherActor, m_fBaseDamage, nullptr, this, UDamageType::StaticClass());
 	}
-
-	ReleaseThisObject(m_ObjectName);
-	DeActivate();
+	Release();
 }

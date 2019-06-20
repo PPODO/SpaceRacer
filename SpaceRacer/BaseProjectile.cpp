@@ -12,14 +12,16 @@ ABaseProjectile::ABaseProjectile() {
 	m_ProjectileMesh->SetupAttachment(m_CollisionComponent);
 
 	m_MovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(L"Projectile Movement Component");
+
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 void ABaseProjectile::Activate(AActor* Owner, bool bUseTick) {
-	ABasePooling::Activate(Owner, FMath::IsNearlyZero(m_fLifeSpanTime) ? false : bUseTick);
+	ABasePooling::Activate(Owner, bUseTick);
 
 	if (m_MovementComponent->IsValidLowLevelFast()) {
 		m_MovementComponent->SetActive(true, true);
-		m_MovementComponent->Velocity = GetActorForwardVector() * m_MovementComponent->GetMaxSpeed();
+		m_MovementComponent->Velocity = GetActorForwardVector() * m_MovementComponent->InitialSpeed;
 	}
 }
 

@@ -25,9 +25,6 @@ ANuclearProjectile::ANuclearProjectile() {
 	if (HitParticle.Succeeded()) {
 		m_HitParticle = HitParticle.Object;
 	}
-	if (TrailParticle.Succeeded()) {
-		m_TrailParticle = TrailParticle.Object;
-	}
 	RootComponent = m_CollisionComponent;
 
 	if (m_CollisionComponent->IsValidLowLevelFast()) {
@@ -46,6 +43,7 @@ ANuclearProjectile::ANuclearProjectile() {
 		m_MovementComponent->MaxSpeed = 2000.f;
 		m_MovementComponent->ProjectileGravityScale = 0.75f;
 		m_MovementComponent->bRotationFollowsVelocity = true;
+		m_MovementComponent->bInterpRotation = true;
 	}
 
 	m_RadialForceComponent = CreateDefaultSubobject<URadialForceComponent>("Radial Force Component");
@@ -58,21 +56,25 @@ ANuclearProjectile::ANuclearProjectile() {
 	m_RadialForceComponent->Falloff = ERadialImpulseFalloff::RIF_Linear;
 	m_RadialForceComponent->SetupAttachment(RootComponent);
 
-	UParticleSystemComponent* ParticleSysComp1 = CreateDefaultSubobject<UParticleSystemComponent>("Particle System Component 1");
-	ParticleSysComp1->SetTemplate(m_TrailParticle);
-	ParticleSysComp1->SetRelativeLocation(FVector(-75.f, 0.f, 0.f));
-	ParticleSysComp1->SetWorldScale3D(FVector(1.5f));
-	ParticleSysComp1->SetupAttachment(RootComponent);
+	if (TrailParticle.Succeeded()) {
+		UParticleSystemComponent* ParticleSysComp1 = CreateDefaultSubobject<UParticleSystemComponent>("Particle System Component 1");
+		ParticleSysComp1->SetTemplate(TrailParticle.Object);
+		ParticleSysComp1->SetRelativeLocation(FVector(-75.f, 0.f, 0.f));
+		ParticleSysComp1->SetWorldScale3D(FVector(1.5f));
+		ParticleSysComp1->SetupAttachment(RootComponent);
 
-	m_ParticleSystemComponents.Add(ParticleSysComp1);
+		m_ParticleSystemComponents.Add(ParticleSysComp1);
+	}
 
 	m_fLifeSpanTime = 3.5f;
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 void ANuclearProjectile::Activate(AActor * Owner, bool bUseTick) {
 	ABaseProjectile::Activate(Owner, bUseTick);
 
 	if (m_ProjectileMesh->IsValidLowLevelFast()) {
+		m_ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		m_ProjectileMesh->SetHiddenInGame(false);
 	}
 	for (auto Iterator : m_ParticleSystemComponents) {
@@ -87,6 +89,7 @@ void ANuclearProjectile::DeActivate() {
 
 	SetActorHiddenInGame(false);
 	if (m_ProjectileMesh->IsValidLowLevelFast()) {
+		m_ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		m_ProjectileMesh->SetHiddenInGame(true);
 	}
 	for (auto Iterator : m_ParticleSystemComponents) {
@@ -118,6 +121,5 @@ void ANuclearProjectile::OnComponentHit(UPrimitiveComponent* HitComponent, AActo
 	}
 
 	m_RadialForceComponent->FireImpulse();
-	ReleaseThisObject(m_ObjectName);
-	DeActivate();
+	Release();
 }

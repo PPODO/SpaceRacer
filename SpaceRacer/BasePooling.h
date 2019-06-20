@@ -20,16 +20,22 @@ public:
 	virtual void DeActivate();
 
 protected:
-	FORCEINLINE void ReleaseThisObject(const FName& ObjectName);
+	void ReleaseThisObject(const FName& ObjectName);
 
 protected:
 	FName m_ObjectName;
 	float m_fLifeSpanTime;
 
-public:
-	FORCEINLINE void SetObjectName(const FName& ObjectName) { m_ObjectName = ObjectName; };
-
 private:
 	float m_fElapsedTime;
+
+public:
+	FORCEINLINE void Release() {
+		ReleaseThisObject(m_ObjectName);
+		DeActivate();
+	}
+
+public:
+	FORCEINLINE void SetObjectName(const FName& ObjectName) { m_ObjectName = ObjectName; };
 
 };

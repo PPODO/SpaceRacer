@@ -12,18 +12,19 @@ class SPACERACER_API UPoolObjectOwnerComponent : public UActorComponent
 
 public:
 	UPoolObjectOwnerComponent();
-	
+
 protected:
-	virtual void BeginPlay() override;
+	virtual void InitializeComponent() override;
 
 private:
+	class AObjectPoolManager* m_PoolManager;
 	TArray<TPair<FName, uint32>> m_ObjectInformation;
 
 public:
 	TMap<FName, TArray<ABasePooling*>> m_PoolObjects;
 
 public:
-	FORCEINLINE void AddNewObjectType(const FName& ObjectName, const uint32& Count);
-	FORCEINLINE void ReleasePoolObject(const FName& ObjectName, ABasePooling* Object);
+	void AddNewObjectType(const FName& ObjectName, const uint32& Count);
+	void ReleasePoolObject(const FName& ObjectName, ABasePooling* Object);
 
 };

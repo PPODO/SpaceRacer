@@ -61,7 +61,7 @@ ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLe
 		m_CannonMeshComponent->SetWorldScale3D(FVector(0.25f));
 		m_CannonMeshComponent->SetupAttachment(RootComponent);
 		m_CannonMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		
+
 		m_CannonMuzzleComponent = CreateDefaultSubobject<USceneComponent>(L"Cannon Offset Component");
 		m_CannonMuzzleComponent->SetupAttachment(m_CannonMeshComponent);
 		m_CannonMuzzleComponent->SetRelativeLocation(FVector(280.f, 0.f, -7.25f));
@@ -149,6 +149,7 @@ ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLe
 	SpringArm->bInheritPitch = true;
 	SpringArm->bInheritYaw = true;
 	SpringArm->bInheritRoll = true;
+	SpringArm->bDoCollisionTest = true;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ChaseCamera"));
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
@@ -163,9 +164,9 @@ ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLe
 	EngineSoundComponent->SetupAttachment(GetMesh());
 
 	m_SwordMasterChildActorClass = CreateDefaultSubobject<UChildActorComponent>(L"Sword Master Child Actor Class");
+	m_SwordMasterChildActorClass->SetChildActorClass(ASwordMaster::StaticClass());
 	m_SwordMasterChildActorClass->SetRelativeLocation(FVector(0.f));
 	m_SwordMasterChildActorClass->SetRelativeRotation(FRotator(0.f));
-	m_SwordMasterChildActorClass->SetChildActorClass(ASwordMaster::StaticClass());
 	m_SwordMasterChildActorClass->SetupAttachment(RootComponent);
 
 	m_PoolOwnerComponent = CreateDefaultSubobject<UPoolObjectOwnerComponent>(L"Pool Object Owner Component");
@@ -185,9 +186,11 @@ void ASpaceRacerPawn::BeginPlay() {
 
 	EngineSoundComponent->Play();
 
-	if (IsValid(m_SwordMasterChildActorClass)) {
-		m_SwordMasterClass = Cast<ASwordMaster>(m_SwordMasterChildActorClass->GetChildActor());
-		m_SwordMasterClass->SetOwner(this);
+	if (m_SwordMasterChildActorClass) {
+		m_SwordMasterInstance = Cast<ASwordMaster>(m_SwordMasterChildActorClass->GetChildActor());
+		if (m_SwordMasterInstance->IsValidLowLevelFast()) {
+			m_SwordMasterInstance->SetOwner(this);
+		}
 	}
 
 	if (IsValid(m_PoolOwnerComponent)) {
@@ -275,8 +278,8 @@ void ASpaceRacerPawn::OnFireNuclearPressed() {
 void ASpaceRacerPawn::OnUseAbilityPressed() {
 	m_bIsMovingSpringArmLength = true;
 	m_bIsOnAbility = !m_bIsOnAbility;
-	if (IsValid(m_SwordMasterClass)) {
-		m_SwordMasterClass->ActivateSwordMater(m_bIsOnAbility);
+	if (IsValid(m_SwordMasterInstance)) {
+		m_SwordMasterInstance->ActivateSwordMater(m_bIsOnAbility);
 	}
 	if (m_bIsOnAbility && IsValid(m_AbilitySoundCue)) {
 		UGameplayStatics::PlaySound2D(GetWorld(), m_AbilitySoundCue);

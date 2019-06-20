@@ -24,7 +24,7 @@ public:
 	virtual void DeActivate() override;
 
 protected:
-	UPROPERTY()
+	UPROPERTY(VisibleDefaultsOnly)
 		class UBoxComponent* m_CollisionComponent;
 	UPROPERTY()
 		class UStaticMeshComponent* m_ProjectileMesh;
@@ -34,8 +34,6 @@ protected:
 		class USoundCue* m_ProjectileTrailSound;
 	UPROPERTY()
 		class USoundCue* m_ProjectileCollidingSound;
-	UPROPERTY()
-		class UParticleSystem* m_TrailParticle;
 	UPROPERTY()
 		class UParticleSystem* m_HitParticle;
 	UPROPERTY()

@@ -13,11 +13,12 @@ ABasePooling::ABasePooling() {
 void ABasePooling::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	if (m_fElapsedTime >= m_fLifeSpanTime) {
-		ReleaseThisObject(m_ObjectName);
-		DeActivate();
+	if (!FMath::IsNearlyZero(m_fLifeSpanTime)) {
+		if (m_fElapsedTime >= m_fLifeSpanTime) {
+			Release();
+		}
+		m_fElapsedTime += DeltaTime;
 	}
-	m_fElapsedTime += DeltaTime;
 }
 
 void ABasePooling::Activate(AActor* Owner, bool bUseTick) {
