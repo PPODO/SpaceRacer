@@ -37,7 +37,6 @@ void AMultipleHomingMissile::Activate(AActor * Owner, bool bUseTick) {
 		auto ArrayPtr = m_PoolOwnerComponent->m_PoolObjects.Find("DefaultHomingProjectile");
 		if (ArrayPtr) {
 			TSharedRef<TArray<ABasePooling*>*> HomingMissilePtr = MakeShared<TArray<ABasePooling*>*>(ArrayPtr);
-			UE_LOG(LogTemp, Warning, L"HI : %d", (*HomingMissilePtr)->Num());
 
 			const int32 HomingMissileCount = (*HomingMissilePtr)->Num();
 			for (int32 i = 0; i < HomingMissileCount; i++) {
@@ -45,7 +44,7 @@ void AMultipleHomingMissile::Activate(AActor * Owner, bool bUseTick) {
 				AHomingMissile* Projectile = Cast<AHomingMissile>((*HomingMissilePtr)->Pop());
 				if (Projectile) {
 					FVector Location = FVector(0.f, FMath::Cos(CurrentAngle) * m_fMissileDistance, FMath::Sin(CurrentAngle) * m_fMissileDistance);
-					Projectile->SetActorLocationAndRotation(GetActorLocation() + Location, Location.Rotation(), false, nullptr, ETeleportType::ResetPhysics);
+					Projectile->SetActorLocationAndRotation(GetActorLocation() + Location, FRotator(0.f, GetActorRotation().Yaw, 0.f) + Location.Rotation(), false, nullptr, ETeleportType::ResetPhysics);
 					Projectile->SetTarget(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 					Projectile->Activate(this);
 				}

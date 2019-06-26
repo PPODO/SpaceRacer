@@ -12,8 +12,14 @@ class SPACERACER_API ACheckMate : public AActor
 public:
 	ACheckMate();
 
-protected:
-	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
+private:
+	UPROPERTY(VisibleDefaultsOnly)
+		class USceneComponent* m_SceneComponent;
+
+	UPROPERTY()
+		TArray<class UChildActorComponent*> m_ChildActorComponents;
+
+private:
+	float m_fKnifeDistance;
 
 };

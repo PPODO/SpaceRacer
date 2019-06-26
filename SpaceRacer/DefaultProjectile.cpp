@@ -30,7 +30,7 @@ ADefaultProjectile::ADefaultProjectile() {
 		m_MovementComponent->ProjectileGravityScale = 0.f;
 	}
 
-	m_fBaseDamage = 35.f;
+	m_fBaseDamage = 15.f;
 	m_fLifeSpanTime = 1.5f;
 	PrimaryActorTick.bCanEverTick = false;
 }

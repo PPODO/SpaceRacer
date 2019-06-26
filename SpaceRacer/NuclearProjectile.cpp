@@ -39,8 +39,8 @@ ANuclearProjectile::ANuclearProjectile() {
 	}
 
 	if (m_MovementComponent->IsValidLowLevelFast()) {
-		m_MovementComponent->InitialSpeed = 2000.f;
-		m_MovementComponent->MaxSpeed = 2000.f;
+		m_MovementComponent->InitialSpeed = 5000.f;
+		m_MovementComponent->MaxSpeed = 5000.f;
 		m_MovementComponent->ProjectileGravityScale = 0.75f;
 		m_MovementComponent->bRotationFollowsVelocity = true;
 		m_MovementComponent->bInterpRotation = true;
@@ -67,6 +67,7 @@ ANuclearProjectile::ANuclearProjectile() {
 	}
 
 	m_fLifeSpanTime = 3.5f;
+	m_fBaseDamage = 1000.f;
 	PrimaryActorTick.bCanEverTick = false;
 }
 
@@ -120,6 +121,12 @@ void ANuclearProjectile::OnComponentHit(UPrimitiveComponent* HitComponent, AActo
 		PC->PlayerCameraManager->PlayCameraShake(m_ExplosionShakeClass);
 	}
 
+	TArray<AActor*> IgnoredActor;
+	if (GetOwner()) {
+		IgnoredActor.Add(GetOwner());
+	}
+
+	UGameplayStatics::ApplyRadialDamage(GetWorld(), m_fBaseDamage, GetActorLocation(), 50000.f, UDamageType::StaticClass(), IgnoredActor, this);
 	m_RadialForceComponent->FireImpulse();
 	Release();
 }

@@ -36,7 +36,7 @@ private:
 		class UStaticMeshComponent* m_CannonMeshComponent;
 	UPROPERTY()
 		class USceneComponent* m_CannonMuzzleComponent;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Meta = (AllowPrivateAccess = "true"))
 		class UChildActorComponent* m_SwordMasterChildActorClass;
 	UPROPERTY()
 		class UPoolObjectOwnerComponent* m_PoolOwnerComponent;
@@ -47,13 +47,25 @@ private:
 		float m_fLookRightRate = 0.5f;
 	UPROPERTY(EditAnywhere, Category = "Projectile Setting", Meta = (AllowPrivateAccess = "true"))
 		float m_fFireProjectileDelay = 0.125f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile Count", Meta = (AllowPrivateAccess = "true"))
+		bool m_bIsInfiniteDefaultProjectile;
 
 private:
 	TMap<uint32, APawn*> m_SensingPawns;
 
 private:
-	uint32 m_CurrentDefaultProjectileCount;
-	uint32 m_CurrentNuclearProjectileCount;
+	UPROPERTY(BlueprintReadOnly, Meta = (AllowPrivateAccess = "true"))
+		float m_fHealth;
+	UPROPERTY(BlueprintReadOnly, Meta = (AllowPrivateAccess = "true"))
+		float m_fMana;
+	UPROPERTY(BlueprintReadOnly, Meta = (AllowPrivateAccess = "true"))
+		int32 m_CurrentDefaultProjectileCount;
+	UPROPERTY(BlueprintReadOnly, Meta = (AllowPrivateAccess = "true"))
+		int32 m_CurrentLeftDefaultProjectileCount;
+	UPROPERTY(BlueprintReadOnly, Meta = (AllowPrivateAccess = "true"))
+		int32 m_CurrentNuclearProjectileCount;
+	UPROPERTY(BlueprintReadOnly, Meta = (AllowPrivateAccess = "true"))
+		bool m_bIsDead;
 
 	UPROPERTY()
 		class USoundCue* m_FireDefaultProjectileCue;
@@ -61,8 +73,6 @@ private:
 		class UParticleSystem* m_MuzzleEffect;
 	UPROPERTY()
 		class USoundCue* m_AbilitySoundCue;
-
-	class ASwordMaster* m_SwordMasterInstance;
 
 private:
 	FVector m_NuclearSpawnOffset;
@@ -74,17 +84,26 @@ private:
 private:
 	float m_CurrentSpringArmLength;
 	bool m_bIsMovingSpringArmLength;
+	bool m_InfinityHealth;
+	bool m_InfinityMana;
 
 private:
 	FORCEINLINE void UpdateCannonRotation(const FRotator& CannonRotation);
 	FORCEINLINE void FireProjectile(const FRotator& CannonRotation);
 	FORCEINLINE void UpdateSpringArmLength(const float& Delta);
 	FORCEINLINE void UpdateEngineAudioSound();
+
+private:
+	FORCEINLINE bool CanMove();
+
+private:
+	FORCEINLINE class ASwordMaster* GetSwordMasterChildActor();
 	
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	virtual void Tick(float Delta) override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 private:
 	void MoveForward(float Val);
@@ -100,6 +119,9 @@ private:
 	void OnFireProjectileReleased();
 	void OnFireNuclearPressed();
 	void OnUseAbilityPressed();
+	void OnInfinityHealthPressed();
+	void OnInfinityManaPressed();
+	void OnInfinityProjectilePressed();
 
 	static const FName LookUpBinding;
 	static const FName LookRightBinding;

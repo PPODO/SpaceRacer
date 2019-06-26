@@ -38,6 +38,9 @@ private:
 	float m_fCurrentSpinSpeed;
 
 private:
+	bool m_bIsActivate;
+
+private:
 	UFUNCTION()
 		void OnShieldComponentOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -47,5 +50,8 @@ public:
 public:
 	FORCEINLINE void SetSwordDistance(const float& Distance) { m_fSwordDistance = Distance; }
 	FORCEINLINE void SetInterpSpeed(const float& Speed) { m_fInterpSpeed = Speed; }
+
+public:
+	FORCEINLINE bool GetIsActivate() const { return m_bIsActivate; }
 
 };

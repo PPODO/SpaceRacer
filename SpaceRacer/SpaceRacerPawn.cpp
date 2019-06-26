@@ -38,7 +38,6 @@ const uint32 MaxDefaultProjectileCount = 50;
 const uint32 MaxNuclearProjectileCount = 3;
 const float DefaultSpringArmLength = 125.f;
 const float AbilityOnSpringArmLength = 225.f;
-const float PerceptionAngle = FMath::DegreesToRadians(50.f);
 
 ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLength(DefaultSpringArmLength), m_bIsMovingSpringArmLength(false) {
 	::ConstructorHelpers::FObjectFinder<USoundCue> AbilitySoundCue(L"SoundCue'/Game/ProjectileSounds/AbilitySound_Cue.AbilitySound_Cue'");
@@ -164,34 +163,35 @@ ASpaceRacerPawn::ASpaceRacerPawn() : m_bIsOnAbility(false), m_CurrentSpringArmLe
 	EngineSoundComponent->SetupAttachment(GetMesh());
 
 	m_SwordMasterChildActorClass = CreateDefaultSubobject<UChildActorComponent>(L"Sword Master Child Actor Class");
-	m_SwordMasterChildActorClass->SetChildActorClass(ASwordMaster::StaticClass());
+	m_SwordMasterChildActorClass->SetChildActorClass(nullptr);
 	m_SwordMasterChildActorClass->SetRelativeLocation(FVector(0.f));
 	m_SwordMasterChildActorClass->SetRelativeRotation(FRotator(0.f));
 	m_SwordMasterChildActorClass->SetupAttachment(RootComponent);
 
 	m_PoolOwnerComponent = CreateDefaultSubobject<UPoolObjectOwnerComponent>(L"Pool Object Owner Component");
-	m_PoolOwnerComponent->AddNewObjectType("DefaultProjectile", 75);
+	m_PoolOwnerComponent->AddNewObjectType("DefaultProjectile", 100);
 	m_PoolOwnerComponent->AddNewObjectType("NuclearProjectile", 5);
 
 	m_NuclearSpawnOffset = FVector(0.f, 0.f, 1000.f);
 	m_CannonDefaultRotation = FRotator(25.f, 0.f, 0.f);
 	m_CurrentDefaultProjectileCount = ::MaxDefaultProjectileCount;
 	m_CurrentNuclearProjectileCount = ::MaxNuclearProjectileCount;
+	m_CurrentLeftDefaultProjectileCount = ::MaxDefaultProjectileCount * 3;
+
+	m_fHealth = 100.f;
+	m_fMana = 0.f;
 
 	bIsLowFriction = false;
+	m_bIsDead = false;
+	m_bIsInfiniteDefaultProjectile = false;
+	m_InfinityHealth = false;
+	m_InfinityMana = false;
 }
 
 void ASpaceRacerPawn::BeginPlay() {
 	Super::BeginPlay();
 
 	EngineSoundComponent->Play();
-
-	if (m_SwordMasterChildActorClass) {
-		m_SwordMasterInstance = Cast<ASwordMaster>(m_SwordMasterChildActorClass->GetChildActor());
-		if (m_SwordMasterInstance->IsValidLowLevelFast()) {
-			m_SwordMasterInstance->SetOwner(this);
-		}
-	}
 
 	if (IsValid(m_PoolOwnerComponent)) {
 		m_DefaultProjectilePtr = MakeShared<TArray<ABasePooling*>*>(m_PoolOwnerComponent->m_PoolObjects.Find("DefaultProjectile"));
@@ -201,16 +201,69 @@ void ASpaceRacerPawn::BeginPlay() {
 
 void ASpaceRacerPawn::Tick(float Delta) {
 	Super::Tick(Delta);
-	
+
 	FRotator CurrentCannonRotation = GetControlRotation() + m_CannonDefaultRotation;
 
 	UpdatePhysicsMaterial();
-	UpdateCannonRotation(CurrentCannonRotation);
-	FireProjectile(CurrentCannonRotation);
-	UpdateSpringArmLength(Delta);
+	if (CanMove()) {
+		UpdateCannonRotation(CurrentCannonRotation);
+		FireProjectile(CurrentCannonRotation);
+		UpdateSpringArmLength(Delta);
+	}
 	UpdateEngineAudioSound();
 
+	if (!m_InfinityMana) {
+		float Scalar = Delta * 2.f;
+		if (m_bIsOnAbility) {
+			if (m_fMana - Scalar < 0.f) {
+				m_fMana = 0.f;
+				OnUseAbilityPressed();
+			}
+			else {
+				m_fMana -= Scalar;
+			}
+		}
+		else {
+			if (m_fMana + Scalar > 100.f) {
+				m_fMana = 100.f;
+			}
+			else {
+				m_fMana += Scalar;
+			}
+		}
+	}
 	m_ElapsedTime += Delta;
+}
+
+float ASpaceRacerPawn::TakeDamage(float DamageAmount, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser) {
+	float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (m_bIsOnAbility) {
+		if (!m_InfinityMana) {
+			if (m_fMana - 5.f < 0.f) {
+				m_fMana = 0.f;
+			}
+			else {
+				m_fMana -= 5.f;
+			}
+		}
+	}
+	else {
+		if (!m_InfinityHealth) {
+			m_fHealth -= Damage;
+		}
+	}
+
+	if (m_fHealth <= 0.f) {
+		if (APlayerController* PC = Cast<APlayerController>(GetController())) {
+			FInputModeUIOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->bShowMouseCursor = true;
+		}
+		m_bIsDead = true;
+		Destroy();
+	}
+	return Damage;
 }
 
 void ASpaceRacerPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) {
@@ -229,6 +282,10 @@ void ASpaceRacerPawn::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 	PlayerInputComponent->BindAction("FireProjectile", IE_Released, this, &ASpaceRacerPawn::OnFireProjectileReleased);
 	PlayerInputComponent->BindAction("FireNuclear", IE_Pressed, this, &ASpaceRacerPawn::OnFireNuclearPressed);
 	PlayerInputComponent->BindAction("UseAbility", IE_Pressed, this, &ASpaceRacerPawn::OnUseAbilityPressed);
+
+	PlayerInputComponent->BindAction("InfinityHealth", IE_Pressed, this, &ASpaceRacerPawn::OnInfinityHealthPressed);
+	PlayerInputComponent->BindAction("InfinityMana", IE_Pressed, this, &ASpaceRacerPawn::OnInfinityManaPressed);
+	PlayerInputComponent->BindAction("InfinityProjectile", IE_Pressed, this, &ASpaceRacerPawn::OnInfinityProjectilePressed);
 }
 
 void ASpaceRacerPawn::MoveForward(float Val) {
@@ -264,7 +321,7 @@ void ASpaceRacerPawn::OnFireProjectileReleased() {
 }
 
 void ASpaceRacerPawn::OnFireNuclearPressed() {
-	if (m_CurrentNuclearProjectileCount > 0 && m_NuclearProjectilePtr.IsValid() && (*m_NuclearProjectilePtr)->Num() > 0) {
+	if ((!m_bIsInfiniteDefaultProjectile ? m_CurrentNuclearProjectileCount > 0 : true) && m_NuclearProjectilePtr.IsValid() && (*m_NuclearProjectilePtr)->Num() > 0) {
 		ANuclearProjectile* Projectile = Cast<ANuclearProjectile>((*m_NuclearProjectilePtr)->Pop());
 		if (IsValid(Projectile)) {
 			Projectile->SetActorLocationAndRotation(GetActorLocation() + m_NuclearSpawnOffset, FRotator(0.f, GetControlRotation().Yaw, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
@@ -276,14 +333,28 @@ void ASpaceRacerPawn::OnFireNuclearPressed() {
 }
 
 void ASpaceRacerPawn::OnUseAbilityPressed() {
-	m_bIsMovingSpringArmLength = true;
-	m_bIsOnAbility = !m_bIsOnAbility;
-	if (IsValid(m_SwordMasterInstance)) {
-		m_SwordMasterInstance->ActivateSwordMater(m_bIsOnAbility);
+	if (CanMove()) {
+		m_bIsMovingSpringArmLength = true;
+		m_bIsOnAbility = !m_bIsOnAbility;
+		if (ASwordMaster* SM = GetSwordMasterChildActor()) {
+			SM->ActivateSwordMater(m_bIsOnAbility);
+		}
+		if (m_bIsOnAbility && IsValid(m_AbilitySoundCue)) {
+			UGameplayStatics::PlaySound2D(GetWorld(), m_AbilitySoundCue);
+		}
 	}
-	if (m_bIsOnAbility && IsValid(m_AbilitySoundCue)) {
-		UGameplayStatics::PlaySound2D(GetWorld(), m_AbilitySoundCue);
-	}
+}
+
+void ASpaceRacerPawn::OnInfinityHealthPressed() {
+	m_InfinityHealth = !m_InfinityHealth;
+}
+
+void ASpaceRacerPawn::OnInfinityManaPressed() {
+	m_InfinityMana = !m_InfinityMana;
+}
+
+void ASpaceRacerPawn::OnInfinityProjectilePressed() {
+	m_bIsInfiniteDefaultProjectile = !m_bIsInfiniteDefaultProjectile;
 }
 
 void ASpaceRacerPawn::UpdatePhysicsMaterial() {
@@ -307,7 +378,7 @@ void ASpaceRacerPawn::UpdateCannonRotation(const FRotator& CannonRotation) {
 
 void ASpaceRacerPawn::FireProjectile(const FRotator& CannonRotation) {
 	if (m_bIsOnFire) {
-		if (m_ElapsedTime > m_fFireProjectileDelay && m_CurrentDefaultProjectileCount > 0 && m_DefaultProjectilePtr.IsValid() && (*m_DefaultProjectilePtr)->Num() > 0 && IsValid(m_CannonMuzzleComponent)) {
+		if (m_ElapsedTime > m_fFireProjectileDelay && (!m_bIsInfiniteDefaultProjectile ? m_CurrentDefaultProjectileCount > 0 : true) && m_DefaultProjectilePtr.IsValid() && (*m_DefaultProjectilePtr)->Num() > 0 && IsValid(m_CannonMuzzleComponent)) {
 			FVector MuzzleLocation = m_CannonMuzzleComponent->GetComponentLocation();
 			ADefaultProjectile* ProjectileObject = Cast<ADefaultProjectile>((*m_DefaultProjectilePtr)->Pop());
 			ProjectileObject->SetActorLocationAndRotation(MuzzleLocation, CannonRotation);
@@ -316,8 +387,12 @@ void ASpaceRacerPawn::FireProjectile(const FRotator& CannonRotation) {
 			UGameplayStatics::SpawnEmitterAttached(m_MuzzleEffect, m_CannonMuzzleComponent);
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_FireDefaultProjectileCue, GetActorLocation());
 			
-			if (ProjectileObject->IsValidLowLevelFast()) {
+			if (!m_bIsInfiniteDefaultProjectile && ProjectileObject->IsValidLowLevelFast()) {
 				m_CurrentDefaultProjectileCount--;
+				if (m_CurrentDefaultProjectileCount == 0 && m_CurrentLeftDefaultProjectileCount > 0) {
+					m_CurrentLeftDefaultProjectileCount -= ::MaxDefaultProjectileCount;
+					m_CurrentDefaultProjectileCount = ::MaxDefaultProjectileCount;
+				}
 			}
 			m_ElapsedTime = 0.f;
 		}
@@ -339,5 +414,26 @@ void ASpaceRacerPawn::UpdateSpringArmLength(const float& Delta) {
 
 void ASpaceRacerPawn::UpdateEngineAudioSound() {
 	float RPMToAudioScale = 2500.0f / GetVehicleMovement()->GetEngineMaxRotationSpeed();
-	EngineSoundComponent->SetFloatParameter(EngineAudioRPM, GetVehicleMovement()->GetEngineRotationSpeed()*RPMToAudioScale);
+	EngineSoundComponent->SetFloatParameter(EngineAudioRPM, GetVehicleMovement()->GetEngineRotationSpeed() * RPMToAudioScale);
+	EngineSoundComponent->SetVolumeMultiplier(UGameplayStatics::GetGlobalTimeDilation(GetWorld()));
+}
+
+bool ASpaceRacerPawn::CanMove() {
+	if (UGameplayStatics::GetGlobalTimeDilation(GetWorld()) > 0.01f) {
+		return true;
+	}
+	return false;
+}
+
+ASwordMaster * ASpaceRacerPawn::GetSwordMasterChildActor() {
+	if (m_SwordMasterChildActorClass->IsValidLowLevelFast()) {
+		auto SwordMasterInstance = Cast<ASwordMaster>(m_SwordMasterChildActorClass->GetChildActor());
+		if (SwordMasterInstance->IsValidLowLevelFast()) {
+			if (!SwordMasterInstance->GetOwner()) {
+				SwordMasterInstance->SetOwner(this);
+			}
+			return SwordMasterInstance;
+		}
+	}
+	return nullptr;
 }

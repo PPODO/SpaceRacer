@@ -15,6 +15,7 @@ public:
 
 protected:
 	virtual void InitializeComponent() override;
+	virtual void BeginDestroy() override;
 
 private:
 	class AObjectPoolManager* m_PoolManager;

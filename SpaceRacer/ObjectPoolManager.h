@@ -92,7 +92,6 @@ public:
 		if (Result) {
 			Result->GetObjectFromPoolList<T>(List, (Count > 0 ? Count : 0));
 		}
-		// 1
 	}
 
 	template<typename T>

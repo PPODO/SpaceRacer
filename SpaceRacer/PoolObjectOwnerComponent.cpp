@@ -26,6 +26,16 @@ void UPoolObjectOwnerComponent::InitializeComponent() {
 	}
 }
 
+void UPoolObjectOwnerComponent::BeginDestroy() {
+	Super::BeginDestroy();	
+
+	if (m_PoolManager->IsValidLowLevelFast()) {
+		for (auto Iterator : m_PoolObjects) {
+			m_PoolManager->ReleaseObjectToPoolList(Iterator.Value, Iterator.Key);
+		}
+	}
+}
+
 void UPoolObjectOwnerComponent::AddNewObjectType(const FName & ObjectName, const uint32& Count) {
 	m_ObjectInformation.Add(TPair<FName, uint32>(ObjectName, Count));
 }

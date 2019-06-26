@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "BasePooling.h"
 #include "Components/BoxComponent.h"
+#include "GameFramework/DamageType.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFrameWork/ProjectileMovementComponent.h"
 #include "Sound/SoundCue.h"

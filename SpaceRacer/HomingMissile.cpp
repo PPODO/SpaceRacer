@@ -47,7 +47,7 @@ AHomingMissile::AHomingMissile() {
 		m_MovementComponent->ProjectileGravityScale = 0.f;
 		m_MovementComponent->InitialSpeed = 10000.f;
 		m_MovementComponent->MaxSpeed = 10000.f;
-		m_MovementComponent->HomingAccelerationMagnitude = 20000.f;
+		m_MovementComponent->HomingAccelerationMagnitude = 50000.f;
 		m_MovementComponent->bInterpRotation = true;
 		m_MovementComponent->bRotationFollowsVelocity = true;
 	}
@@ -55,6 +55,7 @@ AHomingMissile::AHomingMissile() {
 	m_ExplosionComponent = CreateDefaultSubobject<UMissileExplosionComponent>(L"Missile Explosion Component");
 
 	m_fLifeSpanTime = 10.f;
+	m_fBaseDamage = 20.f;
 	PrimaryActorTick.bCanEverTick = false;
 }
 
@@ -95,6 +96,12 @@ void AHomingMissile::OnComponentHit(UPrimitiveComponent * HitComponent, AActor *
 		if (m_ExplosionComponent) {
 			m_ExplosionComponent->Excute(GetActorLocation());
 		}
+		TArray<AActor*> IgnoredActors;
+		if (GetOwner()) {
+			IgnoredActors.Add(GetOwner());
+		}
+
+		UGameplayStatics::ApplyRadialDamage(GetWorld(), m_fBaseDamage, GetActorLocation(), 750.f, UDamageType::StaticClass(), IgnoredActors, this);
 		Release();
 	}
 }

@@ -47,6 +47,7 @@ ASwordMaster::ASwordMaster() {
 		m_OverlappedEffect = Particle2.Object;
 	}
 
+	m_bIsActivate = false;
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -60,14 +61,15 @@ void ASwordMaster::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	
 	if (IsActorTickEnabled()) {
+		float GlobalTimeDilation = UGameplayStatics::GetGlobalTimeDilation(GetWorld());
 		if (!FMath::IsNearlyEqual(m_fCurrentSpinSpeed, MinSpinSpeed)) {
 			m_fCurrentSpinSpeed = UKismetMathLibrary::FInterpTo(m_fCurrentSpinSpeed, MinSpinSpeed, DeltaTime, m_fInterpSpeed);
 		}
 
-		m_ShieldComponent->AddRelativeRotation(FRotator(0.f, m_fCurrentSpinSpeed / 1.5f, 0.f));
+		m_ShieldComponent->AddRelativeRotation(FRotator(0.f, (m_fCurrentSpinSpeed / 1.5f) * GlobalTimeDilation, 0.f));
 
 		for (auto It : m_SwordMeshes) {
-			It->AddRelativeRotation(FRotator(0.f, m_fCurrentSpinSpeed, 0.f));
+			It->AddRelativeRotation(FRotator(0.f, m_fCurrentSpinSpeed * GlobalTimeDilation, 0.f));
 		}
 	}
 }
@@ -77,8 +79,11 @@ void ASwordMaster::ActivateSwordMater(bool bActivate, bool bSpawnParticle) {
 		m_fCurrentSpinSpeed = MaxSpinSpeed;
 	}
 	SetActorTickEnabled(bActivate);
-	SetActorHiddenInGame(!bActivate);
 	SetActorEnableCollision(bActivate);
+	for (auto Iterator : m_SwordMeshes) {
+		Iterator->SetHiddenInGame(!bActivate);
+	}
+	m_bIsActivate = bActivate;
 
 	if (bSpawnParticle) {
 		UGameplayStatics::SpawnEmitterAttached(m_ActivateSwordMasterEffect, RootComponent, NAME_None);

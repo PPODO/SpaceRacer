@@ -14,14 +14,4 @@ class ASpaceRacerHud : public AHUD
 public:
 	ASpaceRacerHud();
 
-protected:
-	virtual void DrawHUD() override;
-
-private:
-	UPROPERTY()
-		UFont* HUDFont;
-
-private:
-	FVector2D m_CountTextLocation;
-
 };

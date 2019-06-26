@@ -11,7 +11,7 @@ UMissileExplosionComponent::UMissileExplosionComponent() {
 		m_ExplosionParticle = ExplosionParticle.Object;
 	}
 
-	::ConstructorHelpers::FObjectFinder<USoundCue> ExplosionCue(L"SoundCue'/Game/ProjectilesPack/Sounds/Common/Explosion_01_Cue.Explosion_01_Cue'");
+	::ConstructorHelpers::FObjectFinder<USoundCue> ExplosionCue(L"SoundCue'/Game/ProjectilesPack/Sounds/Common/Explosion_02_Cue.Explosion_02_Cue'");
 	if (ExplosionCue.Succeeded()) {
 		m_ExplosionCue = ExplosionCue.Object;
 	}
